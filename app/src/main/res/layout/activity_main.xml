@@ -1,0 +1,75 @@
+<FrameLayout
+    android:id="@+id/contentView"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <at.markushi.ui.RevealColorView
+        android:id="@+id/reveal"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#212121"/>
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:orientation="vertical">
+
+        <FrameLayout
+            android:layout_width="fill_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center_vertical"
+                android:text="@string/welcome"
+                android:textColor="@android:color/white"
+                android:textSize="50sp"/>
+
+            <TextView
+                android:id="@+id/newLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center_vertical"
+                android:textColor="@android:color/white"
+                android:textSize="50sp"
+                android:visibility="invisible"/>
+
+        </FrameLayout>
+
+        <FrameLayout
+            android:layout_width="158dp"
+            android:layout_height="158dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="60dp"
+            android:layout_marginTop="60dp">
+
+            <Button
+                android:id="@+id/mainButton"
+                android:layout_width="150dp"
+                android:layout_height="150dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_pair_button"
+                android:textColor="@android:color/white"
+                android:textSize="25sp"/>
+
+            <ImageView
+                android:id="@+id/loading"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/loading_mask"
+                android:visibility="invisible"/>
+
+        </FrameLayout>
+
+    </LinearLayout>
+
+</FrameLayout>
