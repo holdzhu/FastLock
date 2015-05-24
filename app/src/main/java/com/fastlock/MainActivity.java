@@ -43,7 +43,7 @@ public class MainActivity extends ActionBarActivity {
 	private final static int BUTTON_OFF = 0;
 	private final static int BUTTON_ON = 1;
 	private final static int BUTTON_PAIR = 2;
-	private static int buttonStatus = BUTTON_PAIR;
+	private int buttonStatus = BUTTON_PAIR;
 	private final static int BUTTON_PAIRING = 3;
 	private final static int STATUS_PAIRED = 0;
 	private final static int STATUS_WRONG_PASSWORD = 1;
@@ -61,36 +61,36 @@ public class MainActivity extends ActionBarActivity {
 	private final static String PIN = "1234";
 	private final static int LABEL_ANIMATION_DURATION = 300;
 	private final static int LOADING_ANIMATION_DURATION = 300;
-	private static float labelTextSize;
-	private static String MAC = "";
-	private static BluetoothAdapter bluetoothAdapter;
-	private static OutputStream outputStream;
-	private static InputStream inputStream;
-	private static TextView[] label = new TextView[2];
-	private static int currentLabel = 0;
-	private static BluetoothSocket socket;
-	private static Button mainButton;
-	private static RevealColorView revealColorView;
-	private static ImageView loading;
-	private static Animation rotation;
-	private static Animation fadeIn;
-	private static Animation fadeOut;
-	private static Animation labelFadeIn;
-	private static Animation labelFadeOut;
-	private static Animation labelTranslateAnimation;
-	private static Animation newLabelTranslateAnimation;
-	private static AnimationSet loadingAnimation;
-	private static AnimationSet labelAnimation;
-	private static AnimationSet newLabelAnimation;
-	private static Queue<String> labelQueue = new LinkedList<>();
-	private static AlertDialog.Builder builder;
-	private static Point p;
-	private static boolean isInitialized = false;
-	private static String password = "";
-	private static SharedPreferences sp;
+	private float labelTextSize;
+	private String MAC = "";
+	private BluetoothAdapter bluetoothAdapter;
+	private OutputStream outputStream;
+	private InputStream inputStream;
+	private TextView[] label = new TextView[2];
+	private int currentLabel = 0;
+	private BluetoothSocket socket;
+	private Button mainButton;
+	private RevealColorView revealColorView;
+	private ImageView loading;
+	private Animation rotation;
+	private Animation fadeIn;
+	private Animation fadeOut;
+	private Animation labelFadeIn;
+	private Animation labelFadeOut;
+	private Animation labelTranslateAnimation;
+	private Animation newLabelTranslateAnimation;
+	private AnimationSet loadingAnimation;
+	private AnimationSet labelAnimation;
+	private AnimationSet newLabelAnimation;
+	private Queue<String> labelQueue = new LinkedList<>();
+	private AlertDialog.Builder builder;
+	private Point p;
+	private boolean isInitialized = false;
+	private String password = "";
+	private SharedPreferences sp;
 	private final SetStatusHandler setStatusHandler = new SetStatusHandler(this);
 
-	private static void setLabelText(final String s) {
+	private void setLabelText(final String s) {
 		labelQueue.add(s);
 		if (labelQueue.size() == 1) {
 			label[1 - currentLabel].setText(s);
@@ -126,7 +126,7 @@ public class MainActivity extends ActionBarActivity {
 		}
 	}
 
-	private static void fadeInRotation() {
+	private void fadeInRotation() {
 		loadingAnimation = new AnimationSet(false);
 		loadingAnimation.addAnimation(rotation);
 		loadingAnimation.addAnimation(fadeIn);
@@ -134,7 +134,7 @@ public class MainActivity extends ActionBarActivity {
 		loading.startAnimation(loadingAnimation);
 	}
 
-	private static void fadeOutRotation() {
+	private void fadeOutRotation() {
 		loadingAnimation.addAnimation(fadeOut);
 		fadeOut.setAnimationListener(new Animation.AnimationListener() {
 			@Override
@@ -156,7 +156,7 @@ public class MainActivity extends ActionBarActivity {
 		});
 	}
 
-	private static void setButtonStatus(int status) {
+	private void setButtonStatus(int status) {
 		buttonStatus = status;
 		switch (status) {
 			case BUTTON_PAIR:
@@ -190,7 +190,7 @@ public class MainActivity extends ActionBarActivity {
 		}
 	}
 
-	private static byte[] receive() {
+	private byte[] receive() {
 		try {
 			Thread.sleep(200);
 			int count = inputStream.available();
@@ -213,11 +213,11 @@ public class MainActivity extends ActionBarActivity {
 		}
 	}
 
-	private static void setPassword(String newPassword) {
+	private void setPassword(String newPassword) {
 		password = newPassword;
 	}
 
-	private static void closeSocket() {
+	private void closeSocket() {
 		try {
 			socket.close();
 		} catch (Exception e) {
