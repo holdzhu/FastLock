@@ -1,0 +1,14 @@
+package com.fastlock;
+
+public enum Status {
+	PAIRED,
+	WRONG_PASSWORD,
+	CONNECT_FAILED,
+	TURN_FAILED,
+	TURNED,
+	CHANGED,
+	CHANGE_FAILED,
+	TURN_ON_BLUETOOTH,
+	CONNECTING,
+	PAIRING
+}

@@ -13,7 +13,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.ActionBarActivity;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.animation.AlphaAnimation;
@@ -37,30 +36,16 @@ import java.util.UUID;
 
 import at.markushi.ui.RevealColorView;
 
-
 public class MainActivity extends ActionBarActivity {
-
-	private final static int BUTTON_OFF = 0;
-	private final static int BUTTON_ON = 1;
-	private final static int BUTTON_PAIR = 2;
-	private int buttonStatus = BUTTON_PAIR;
-	private final static int BUTTON_PAIRING = 3;
-	private final static int STATUS_PAIRED = 0;
-	private final static int STATUS_WRONG_PASSWORD = 1;
-	private final static int STATUS_CONNECT_FAILED = 2;
-	private final static int STATUS_TURN_FAILED = 3;
-	private final static int STATUS_TURNED = 4;
-	private final static int STATUS_CHANGED = 5;
-	private final static int STATUS_CHANGE_FAILED = 6;
-	private final static int STATUS_TURN_ON_BLUETOOTH = 7;
-	private final static int STATUS_CONNECTING = 8;
-	private final static int STATUS_PAIRING = 9;
+	private final static String BUTTON_TEXT_UNSET = "长按配对设置";
 	private final static String BUTTON_TEXT_PAIR = "配对";
 	private final static String BUTTON_TEXT_ON = "开锁";
 	private final static String BUTTON_TEXT_OFF = "上锁";
 	private final static String PIN = "1234";
 	private final static int LABEL_ANIMATION_DURATION = 300;
 	private final static int LOADING_ANIMATION_DURATION = 300;
+	private final SetStatusHandler setStatusHandler = new SetStatusHandler(this);
+	private ButtonStatus buttonStatus = ButtonStatus.PAIR;
 	private float labelTextSize;
 	private String MAC = "";
 	private BluetoothAdapter bluetoothAdapter;
@@ -83,12 +68,10 @@ public class MainActivity extends ActionBarActivity {
 	private AnimationSet labelAnimation;
 	private AnimationSet newLabelAnimation;
 	private Queue<String> labelQueue = new LinkedList<>();
-	private AlertDialog.Builder builder;
 	private Point p;
 	private boolean isInitialized = false;
 	private String password = "";
 	private SharedPreferences sp;
-	private final SetStatusHandler setStatusHandler = new SetStatusHandler(this);
 
 	private void setLabelText(final String s) {
 		labelQueue.add(s);
@@ -156,10 +139,10 @@ public class MainActivity extends ActionBarActivity {
 		});
 	}
 
-	private void setButtonStatus(int status) {
+	private void setButtonStatus(ButtonStatus status) {
 		buttonStatus = status;
 		switch (status) {
-			case BUTTON_PAIR:
+			case PAIR:
 				mainButton.setText(BUTTON_TEXT_PAIR);
 				mainButton.setEnabled(true);
 				closeSocket();
@@ -167,21 +150,21 @@ public class MainActivity extends ActionBarActivity {
 				revealColorView.hide(p.x, p.y, Color.parseColor("#212121"), 0, 300, null);
 				fadeOutRotation();
 				break;
-			case BUTTON_ON:
+			case ON:
 				mainButton.setText(BUTTON_TEXT_ON);
 				mainButton.setEnabled(true);
 				mainButton.setBackgroundResource(R.drawable.bg_on_button);
 				revealColorView.reveal(p.x, p.y, Color.parseColor("#8bc34a"), mainButton.getHeight() / 2, 340, null);
 				fadeOutRotation();
 				break;
-			case BUTTON_OFF:
+			case OFF:
 				mainButton.setText(BUTTON_TEXT_OFF);
 				mainButton.setEnabled(true);
 				mainButton.setBackgroundResource(R.drawable.bg_off_button);
 				revealColorView.reveal(p.x, p.y, Color.parseColor("#e91e63"), mainButton.getHeight() / 2, 340, null);
 				fadeOutRotation();
 				break;
-			case BUTTON_PAIRING:
+			case PAIRING:
 				mainButton.setEnabled(false);
 				mainButton.setBackgroundResource(R.drawable.bg_pair_button);
 				revealColorView.reveal(p.x, p.y, Color.parseColor("#3f51b5"), mainButton.getHeight() / 2, 340, null);
@@ -230,34 +213,30 @@ public class MainActivity extends ActionBarActivity {
 		bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 		bluetoothAdapter.cancelDiscovery();
 		if (!bluetoothAdapter.isEnabled()) {
-			setStatusHandler.sendEmptyMessage(STATUS_TURN_ON_BLUETOOTH);
+			setStatusHandler.sendEmptyMessage(Status.TURN_ON_BLUETOOTH.ordinal());
 			bluetoothAdapter.enable();
 			Thread.sleep(500);
 		}
 		if (!BluetoothAdapter.checkBluetoothAddress(strAddress)) {
-			Log.d("what", "aaa");
+			return false;
 		}
 		BluetoothDevice device = bluetoothAdapter.getRemoteDevice(strAddress);
 		if (device.getBondState() != BluetoothDevice.BOND_BONDED) {
-			setStatusHandler.sendEmptyMessage(STATUS_PAIRING);
+			setStatusHandler.sendEmptyMessage(Status.PAIRING.ordinal());
 			try {
-				Log.d("no", "no BOND");
 				ClsUtils.setPin(device.getClass(), device, strPsw);
 				ClsUtils.createBond(device.getClass(), device);
 				result = true;
 			} catch (Exception e) {
-				Log.d("np", "setPIINNN FFFFF");
 				e.printStackTrace();
 			}
 		} else {
-			Log.d("yes", "BOND");
 			try {
 				ClsUtils.createBond(device.getClass(), device);
 				ClsUtils.setPin(device.getClass(), device, strPsw);
 				ClsUtils.createBond(device.getClass(), device);
 				result = true;
 			} catch (Exception e) {
-				Log.d("no", "ppppiiinn");
 				e.printStackTrace();
 			}
 		}
@@ -276,20 +255,20 @@ public class MainActivity extends ActionBarActivity {
 		sp = getSharedPreferences("su", Context.MODE_PRIVATE);
 		MAC = sp.getString("mac", "");
 		if ("".equals(MAC)) {
-			label[0].setText("长按按钮设置");
+			label[0].setText(BUTTON_TEXT_UNSET);
 		}
 		mainButton.setText(BUTTON_TEXT_PAIR);
 		mainButton.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				switch (buttonStatus) {
-					case BUTTON_PAIR:
+					case PAIR:
 						pairButtonClick();
 						break;
-					case BUTTON_ON:
+					case ON:
 						onButtonClick();
 						break;
-					case BUTTON_OFF:
+					case OFF:
 						offButtonClick();
 						break;
 				}
@@ -298,7 +277,7 @@ public class MainActivity extends ActionBarActivity {
 		mainButton.setOnLongClickListener(new View.OnLongClickListener() {
 			@Override
 			public boolean onLongClick(View v) {
-				if (buttonStatus == BUTTON_OFF || buttonStatus == BUTTON_ON) {
+				if (buttonStatus == ButtonStatus.OFF || buttonStatus == ButtonStatus.ON) {
 					onChangePassword();
 				} else {
 					onChangeMAC();
@@ -377,49 +356,49 @@ public class MainActivity extends ActionBarActivity {
 		return new Point(l1[0], l1[1]);
 	}
 
-	private void setStatus(int status) {
+	private void setStatus(Status status) {
 		switch (status) {
-			case STATUS_PAIRING:
+			case PAIRING:
 				setLabelText("配对中");
 				break;
-			case STATUS_CONNECTING:
+			case CONNECTING:
 				setLabelText("连接中");
 				break;
-			case STATUS_TURN_ON_BLUETOOTH:
+			case TURN_ON_BLUETOOTH:
 				setLabelText("开启蓝牙中");
 				break;
-			case STATUS_CHANGE_FAILED:
+			case CHANGE_FAILED:
 				setLabelText("更改失败");
 				break;
-			case STATUS_CHANGED:
+			case CHANGED:
 				setLabelText("已更改");
 				break;
-			case STATUS_TURNED:
-				if (buttonStatus == BUTTON_ON) {
+			case TURNED:
+				if (buttonStatus == ButtonStatus.ON) {
 					setLabelText("已开锁");
-					setButtonStatus(BUTTON_OFF);
+					setButtonStatus(ButtonStatus.OFF);
 				} else {
 					setLabelText("已上锁");
-					setButtonStatus(BUTTON_ON);
+					setButtonStatus(ButtonStatus.ON);
 				}
 				break;
-			case STATUS_TURN_FAILED:
-				if (buttonStatus == BUTTON_ON) {
+			case TURN_FAILED:
+				if (buttonStatus == ButtonStatus.ON) {
 					setLabelText("开锁失败");
 				} else {
 					setLabelText("上锁失败");
 				}
 				break;
-			case STATUS_PAIRED:
+			case PAIRED:
 				onInputPassword();
 				break;
-			case STATUS_CONNECT_FAILED:
+			case CONNECT_FAILED:
 				setLabelText("连接失败");
-				setButtonStatus(BUTTON_PAIR);
+				setButtonStatus(ButtonStatus.PAIR);
 				break;
-			case STATUS_WRONG_PASSWORD:
+			case WRONG_PASSWORD:
 				setLabelText("密码错误");
-				setButtonStatus(BUTTON_PAIR);
+				setButtonStatus(ButtonStatus.PAIR);
 				break;
 		}
 	}
@@ -444,16 +423,16 @@ public class MainActivity extends ActionBarActivity {
 						outputStream.write("\0sset\0".getBytes());
 						outputStream.write(password.getBytes());
 						if (Arrays.equals(receive(), "righ".getBytes())) {
-							setStatus(STATUS_CHANGED);
+							setStatus(Status.CHANGED);
 							setPassword(password);
 						} else {
-							setStatus(STATUS_CHANGE_FAILED);
+							setStatus(Status.CHANGE_FAILED);
 						}
 					} catch (Exception e) {
-						setStatus(STATUS_CHANGE_FAILED);
+						setStatus(Status.CHANGE_FAILED);
 					}
 				} else {
-					setStatus(STATUS_CHANGE_FAILED);
+					setStatus(Status.CHANGE_FAILED);
 				}
 			}
 		});
@@ -467,7 +446,7 @@ public class MainActivity extends ActionBarActivity {
 	}
 
 	private void onInputPassword() {
-		builder = new AlertDialog.Builder(MainActivity.this);
+		AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
 		final View textEntryView = View.inflate(MainActivity.this, R.layout.password_dialog, null);
 		builder.setTitle("输入密码");
 		builder.setView(textEntryView);
@@ -487,52 +466,52 @@ public class MainActivity extends ActionBarActivity {
 							bytes = receive();
 							if (Arrays.equals(bytes, "LOCK".getBytes())) {
 								setLabelText("连接成功");
-								setButtonStatus(BUTTON_ON);
+								setButtonStatus(ButtonStatus.ON);
 							} else if (Arrays.equals(bytes, "UNLO".getBytes())) {
 								setLabelText("连接成功");
-								setButtonStatus(BUTTON_OFF);
+								setButtonStatus(ButtonStatus.OFF);
 							} else {
-								setStatus(STATUS_WRONG_PASSWORD);
+								setStatus(Status.WRONG_PASSWORD);
 							}
 						} else {
-							setStatus(STATUS_CONNECT_FAILED);
+							setStatus(Status.CONNECT_FAILED);
 						}
 					} catch (Exception e) {
-						setStatus(STATUS_CONNECT_FAILED);
+						setStatus(Status.CONNECT_FAILED);
 					}
 				} else {
-					setStatus(STATUS_CONNECT_FAILED);
+					setStatus(Status.CONNECT_FAILED);
 				}
 			}
 		});
 		builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
-				setStatus(STATUS_CONNECT_FAILED);
+				setStatus(Status.CONNECT_FAILED);
 			}
 		});
 		builder.show();
 	}
 
 	private void pairButtonClick() {
-		setButtonStatus(BUTTON_PAIRING);
+		setButtonStatus(ButtonStatus.PAIRING);
 		final Thread thread = new Thread(new Runnable() {
 			@Override
 			public void run() {
 				try {
 					if (pair(MAC, PIN)) {
-						setStatusHandler.sendEmptyMessage(STATUS_CONNECTING);
+						setStatusHandler.sendEmptyMessage(Status.CONNECTING.ordinal());
 						socket = bluetoothAdapter.getRemoteDevice(MAC).createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"));
 						Thread.sleep(1000);
 						socket.connect();
 						outputStream = socket.getOutputStream();
 						inputStream = socket.getInputStream();
-						setStatusHandler.sendEmptyMessage(STATUS_PAIRED);
+						setStatusHandler.sendEmptyMessage(Status.PAIRED.ordinal());
 					} else {
-						setStatusHandler.sendEmptyMessage(STATUS_CONNECT_FAILED);
+						setStatusHandler.sendEmptyMessage(Status.CONNECT_FAILED.ordinal());
 					}
 				} catch (Exception e) {
-					setStatusHandler.sendEmptyMessage(STATUS_CONNECT_FAILED);
+					setStatusHandler.sendEmptyMessage(Status.CONNECT_FAILED.ordinal());
 				}
 			}
 		});
@@ -546,12 +525,12 @@ public class MainActivity extends ActionBarActivity {
 				try {
 					outputStream.write("\0unlo\0".getBytes());
 					if (Arrays.equals(receive(), "UNLO".getBytes())) {
-						setStatusHandler.sendEmptyMessage(STATUS_TURNED);
+						setStatusHandler.sendEmptyMessage(Status.TURNED.ordinal());
 					} else {
-						setStatusHandler.sendEmptyMessage(STATUS_TURN_FAILED);
+						setStatusHandler.sendEmptyMessage(Status.TURN_FAILED.ordinal());
 					}
 				} catch (Exception e) {
-					setStatusHandler.sendEmptyMessage(STATUS_CONNECT_FAILED);
+					setStatusHandler.sendEmptyMessage(Status.CONNECT_FAILED.ordinal());
 				}
 			}
 		});
@@ -565,12 +544,12 @@ public class MainActivity extends ActionBarActivity {
 				try {
 					outputStream.write("\0lock\0".getBytes());
 					if (Arrays.equals(receive(), "LOCK".getBytes())) {
-						setStatusHandler.sendEmptyMessage(STATUS_TURNED);
+						setStatusHandler.sendEmptyMessage(Status.TURNED.ordinal());
 					} else {
-						setStatusHandler.sendEmptyMessage(STATUS_TURN_FAILED);
+						setStatusHandler.sendEmptyMessage(Status.TURN_FAILED.ordinal());
 					}
 				} catch (Exception e) {
-					setStatusHandler.sendEmptyMessage(STATUS_CONNECT_FAILED);
+					setStatusHandler.sendEmptyMessage(Status.CONNECT_FAILED.ordinal());
 				}
 			}
 		});
@@ -589,9 +568,9 @@ public class MainActivity extends ActionBarActivity {
 
 	@Override
 	protected void onPause() {
-		if (buttonStatus != BUTTON_PAIR && buttonStatus != BUTTON_PAIRING) {
+		if (buttonStatus != ButtonStatus.PAIR && buttonStatus != ButtonStatus.PAIRING) {
 			closeSocket();
-			setButtonStatus(BUTTON_PAIR);
+			setButtonStatus(ButtonStatus.PAIR);
 			setLabelText("已断开连接");
 		}
 		super.onPause();
@@ -612,7 +591,7 @@ public class MainActivity extends ActionBarActivity {
 
 		@Override
 		public void handleMessage(Message msg) {
-			mActivity.get().setStatus(msg.what);
+			mActivity.get().setStatus(Status.values()[msg.what]);
 			super.handleMessage(msg);
 		}
 	}
