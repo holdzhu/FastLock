@@ -10,8 +10,6 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.support.v7.app.ActionBarActivity;
 import android.view.View;
 import android.view.ViewTreeObserver;
@@ -28,7 +26,6 @@ import android.widget.TextView;
 
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -80,12 +77,7 @@ public class MainActivity extends ActionBarActivity {
 			label[currentLabel].setVisibility(View.INVISIBLE);
 			label[currentLabel].startAnimation(labelAnimation);
 			label[1 - currentLabel].startAnimation(newLabelAnimation);
-			newLabelAnimation.setAnimationListener(new Animation.AnimationListener() {
-				@Override
-				public void onAnimationStart(Animation animation) {
-
-				}
-
+			newLabelAnimation.setAnimationListener(new CallbackAnimationListener() {
 				@Override
 				public void onAnimationEnd(Animation animation) {
 					if (!animation.hasEnded()) {
@@ -99,11 +91,6 @@ public class MainActivity extends ActionBarActivity {
 							label[currentLabel].setVisibility(View.VISIBLE);
 						}
 					}
-				}
-
-				@Override
-				public void onAnimationRepeat(Animation animation) {
-
 				}
 			});
 		}
@@ -119,22 +106,12 @@ public class MainActivity extends ActionBarActivity {
 
 	private void fadeOutRotation() {
 		loadingAnimation.addAnimation(fadeOut);
-		fadeOut.setAnimationListener(new Animation.AnimationListener() {
-			@Override
-			public void onAnimationStart(Animation animation) {
-
-			}
-
+		fadeOut.setAnimationListener(new CallbackAnimationListener() {
 			@Override
 			public void onAnimationEnd(Animation animation) {
 				loading.setVisibility(View.INVISIBLE);
 				loadingAnimation.cancel();
 				loading.clearAnimation();
-			}
-
-			@Override
-			public void onAnimationRepeat(Animation animation) {
-
 			}
 		});
 	}
@@ -266,10 +243,10 @@ public class MainActivity extends ActionBarActivity {
 						pairButtonClick();
 						break;
 					case ON:
-						onButtonClick();
+						turn("\0unlo\0", "UNLO");
 						break;
 					case OFF:
-						offButtonClick();
+						turn("\0lock\0", "LOCK");
 						break;
 				}
 			}
@@ -356,7 +333,7 @@ public class MainActivity extends ActionBarActivity {
 		return new Point(l1[0], l1[1]);
 	}
 
-	private void setStatus(Status status) {
+	public void setStatus(Status status) {
 		switch (status) {
 			case PAIRING:
 				setLabelText("配对中");
@@ -518,32 +495,13 @@ public class MainActivity extends ActionBarActivity {
 		thread.start();
 	}
 
-	private void onButtonClick() {
+	private void turn(final String sendString, final String receiveString) {
 		final Thread thread = new Thread(new Runnable() {
 			@Override
 			public void run() {
 				try {
-					outputStream.write("\0unlo\0".getBytes());
-					if (Arrays.equals(receive(), "UNLO".getBytes())) {
-						setStatusHandler.sendEmptyMessage(Status.TURNED.ordinal());
-					} else {
-						setStatusHandler.sendEmptyMessage(Status.TURN_FAILED.ordinal());
-					}
-				} catch (Exception e) {
-					setStatusHandler.sendEmptyMessage(Status.CONNECT_FAILED.ordinal());
-				}
-			}
-		});
-		thread.start();
-	}
-
-	private void offButtonClick() {
-		final Thread thread = new Thread(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					outputStream.write("\0lock\0".getBytes());
-					if (Arrays.equals(receive(), "LOCK".getBytes())) {
+					outputStream.write(sendString.getBytes());
+					if (Arrays.equals(receive(), receiveString.getBytes())) {
 						setStatusHandler.sendEmptyMessage(Status.TURNED.ordinal());
 					} else {
 						setStatusHandler.sendEmptyMessage(Status.TURN_FAILED.ordinal());
@@ -574,25 +532,5 @@ public class MainActivity extends ActionBarActivity {
 			setLabelText("已断开连接");
 		}
 		super.onPause();
-	}
-
-	@Override
-	protected void onResume() {
-		System.out.println("resume");
-		super.onResume();
-	}
-
-	private static class SetStatusHandler extends Handler {
-		private final WeakReference<MainActivity> mActivity;
-
-		public SetStatusHandler(MainActivity activity) {
-			mActivity = new WeakReference<>(activity);
-		}
-
-		@Override
-		public void handleMessage(Message msg) {
-			mActivity.get().setStatus(Status.values()[msg.what]);
-			super.handleMessage(msg);
-		}
 	}
 }
